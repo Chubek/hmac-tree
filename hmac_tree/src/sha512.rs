@@ -5,7 +5,7 @@ mod Sha512Util {
     use crate::constants::SHA512_PRIME;
     use crate::encoders::{BinaryRep, HexRep};
     use crate::utils::ChunkUtils::{rotate_right_by_n_bits, shift_right_by_n_bits};
-    use crate::{add_unchecked, scooch};
+    use crate::{add_unchecked, add_unchecked_field_swap, scooch};
 
     struct Chunks(Vec<Vec<u64>>);
 
@@ -27,7 +27,7 @@ mod Sha512Util {
                 let slice_ind_end = slice_ind_beg + 1024;
 
                 let concerned_block = &init_val[(slice_ind_beg..slice_ind_end)];
-
+                
                 slice_ind_beg = slice_ind_end;
 
                 for j in (0usize..1024usize).step_by(64) {
@@ -176,25 +176,6 @@ mod Sha512Util {
             }
         }
 
-        fn add_and_set_prev(&mut self) {
-            self.A += self.APrev;
-            self.B += self.BPrev;
-            self.C += self.CPrev;
-            self.D += self.DPrev;
-            self.E += self.EPrev;
-            self.F += self.FPrev;
-            self.G += self.GPrev;
-            self.H += self.HPrev;
-
-            self.APrev = self.A;
-            self.BPrev = self.B;
-            self.CPrev = self.C;
-            self.DPrev = self.D;
-            self.EPrev = self.E;
-            self.FPrev = self.F;
-            self.GPrev = self.G;
-            self.HPrev = self.H;
-        }
 
         fn major_value(&self) -> u64 {
             (self.A & self.B) ^ (self.B & self.C) ^ (self.C & self.A)
@@ -227,6 +208,7 @@ mod Sha512Util {
         fn rotate(&mut self, prime_k :u64, message_k: &u64) {
             let d_clone = self.D.clone();
             let h_clone = self.H.clone();
+
             let ch_val = self.ch_val();
             let sigma_e = self.sigma_e();
             let sigma_a = self.sigma_a();
@@ -236,9 +218,8 @@ mod Sha512Util {
             let T1 = add_unchecked!(h_clone, ch_val, sigma_e, msg_k, prime_k);
             let T2 = add_unchecked!(sigma_a, maj_val);
 
-
             self.D = add_unchecked!(d_clone, T1);
-            self.H = add_unchecked!(h_clone, T1, T2);
+            self.H = add_unchecked!(T1, T2);
         }
 
         pub fn process_block(&mut self, chunk_vec: &Vec<u64>) {
@@ -246,6 +227,8 @@ mod Sha512Util {
                 if i != 0 {
                     scooch!(self, H, A, B, C, D, E, F, G);
                 }
+
+
 
                 let message_k = chunk_vec[i];
                 let prime_k = SHA512_PRIME[i];
@@ -255,7 +238,7 @@ mod Sha512Util {
 
             scooch!(self, H, A, B, C, D, E, F, G);
             
-            self.add_and_set_prev();
+            add_unchecked_field_swap!(self {"A", "B", "C", "D", "E", "F", "G", "H"}, "Prev");
         }
 
         pub fn get_hex_rep(&self) -> String {
@@ -282,16 +265,17 @@ mod Sha512Util {
 
 
 pub struct Sha512Hash {
+    data: Vec<u8>,
     message: Sha512Util::Sha512Message,
     buffer: Sha512Util::Sha512Buffer,
 }
 
 impl Sha512Hash {
-    pub fn from_bytes(s: Vec<u8>) -> Self {
-        let message = Sha512Util::Sha512Message::new(s);
+    pub fn from_bytes(data: Vec<u8>) -> Self {
+        let message = Sha512Util::Sha512Message::new(data.clone());
         let buffer = Sha512Util::Sha512Buffer::new();
 
-        let mut obj = Sha512Hash {message, buffer};
+        let mut obj = Sha512Hash {data, message, buffer};
 
         obj.calculate();
 
@@ -309,13 +293,16 @@ impl Sha512Hash {
     }
 
     pub fn update_from_bytes(&mut self, s: Vec<u8>) {
-        self.message = Sha512Util::Sha512Message::new(s);
+        self.data.extend(s);
+
+        self.message = Sha512Util::Sha512Message::new(self.data.clone());
+        self.buffer = Sha512Util::Sha512Buffer::new();
+
         self.calculate();
     }
 
     pub fn update_from_str(&mut self, s: &str) {
-        self.message = Sha512Util::Sha512Message::new(s.as_bytes().to_vec());
-        self.calculate();
+        self.update_from_bytes(s.as_bytes().to_vec())
     }
 
     pub fn get_digest(&self) -> Vec<u8> {

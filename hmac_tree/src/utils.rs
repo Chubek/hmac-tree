@@ -9,6 +9,7 @@ pub mod ChunkUtils {
 }
 
 pub mod MacroRules {
+    use paste;
 
     #[macro_export]
     macro_rules! scooch {
@@ -46,6 +47,25 @@ pub mod MacroRules {
         }
 
     }
+
+    #[macro_export]
+    macro_rules! add_unchecked_field_swap {
+        ($name:ident { $($field:literal),* }, $suff: literal) => {
+            $(
+                paste::paste! {
+                    $name.[<$field>] = crate::utils::Math::no_overflow_add($name.[< $field >], $name.[<$field $suff>]);
+                }
+            )*
+
+            $(
+                paste::paste! {
+                    $name.[<$field $suff>] = $name.[<$field>];
+                }
+            )*
+
+        };
+    }
+
 }
 
 pub mod Math {
@@ -62,8 +82,8 @@ pub mod Math {
         }
 
         let ret = match res > u64::MAX as u128 {
-            true => (res - u64::MAX as u128) as u64,
-            false => res as u64
+            true => (res - u64::MAX as u128) as u64 - 1,
+            false => res as u64,
         };
 
         ret
