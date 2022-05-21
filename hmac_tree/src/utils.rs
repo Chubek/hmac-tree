@@ -29,4 +29,43 @@ pub mod MacroRules {
             };
         };
     }
+
+    #[macro_export]
+    macro_rules! add_unchecked {
+        ( $( $x: ident ), * ) => {
+            {
+              let mut fin = 0u64;
+
+              $(
+                  fin = crate::utils::Math::no_overflow_add(fin, $x);
+              )*
+
+              fin
+
+            }
+        }
+
+    }
+}
+
+pub mod Math {
+    pub fn no_overflow_add(a_in: u64, b_in: u64) -> u64 {
+        let (a, b) = (a_in as u128, b_in as u128);
+
+        let mut carry = a & b;
+        let mut res = a ^ b;
+
+        while carry != 0 {
+            let shifted_carry = carry << 1;
+            carry = res & shifted_carry;
+            res = res ^ shifted_carry;
+        }
+
+        let ret = match res > u64::MAX as u128 {
+            true => (res - u64::MAX as u128) as u64,
+            false => res as u64
+        };
+
+        ret
+    }
 }

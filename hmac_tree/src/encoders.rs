@@ -5,25 +5,30 @@ pub mod BinaryRep {
         let mut res = String::new();
 
         for c in s {
-            res = format!("{}{:b}", res, c);
+            res = format!("{}{:010b}", res, c);
         }
 
         res
     }
 
     pub fn binary_to_int(s: &String) -> u64 {
-        let int = u64::from_str_radix(s, 2).unwrap();
+        let int = {
+                match u64::from_str_radix(s, 2) {
+                    Ok(i) => i,
+                    Err(e) => panic!("{:?}", e),
+                }
+        };
 
         int
     }
 
     pub fn integer_to_binary<T: Binary>(int: T, padding: u8) -> String {
         match padding {
-            8 => format!("{:#010b}", int),
-            16 => format!("{:#018b}", int),
-            32 => format!("{:#034b}", int),
-            64 => format!("{:#066b}", int),
-            128 => format!("{:#0130b}", int),
+            8 => format!("{:010b}", int),
+            16 => format!("{:018b}", int),
+            32 => format!("{:034b}", int),
+            64 => format!("{:066b}", int),
+            128 => format!("{:0130b}", int),
             _ => format!("{:b}", int)
         }
 

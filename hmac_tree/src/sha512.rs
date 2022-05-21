@@ -5,7 +5,7 @@ mod Sha512Util {
     use crate::constants::SHA512_PRIME;
     use crate::encoders::{BinaryRep, HexRep};
     use crate::utils::ChunkUtils::{rotate_right_by_n_bits, shift_right_by_n_bits};
-    use crate::scooch;
+    use crate::{add_unchecked, scooch};
 
     struct Chunks(Vec<Vec<u64>>);
 
@@ -37,6 +37,7 @@ mod Sha512Util {
 
                     chunk.push(int);
                 }
+                
 
                 for m in 16..80 {
                     pad_with_words(&mut chunk, m);
@@ -77,9 +78,9 @@ mod Sha512Util {
         let B = chunk[m - 7];
         let D = chunk[m - 16];
 
-        let added = A + B + C + D;
+        let added = add_unchecked!(A, B, C, D);
 
-        chunk[m] = added;
+        chunk.push(added)
     }
 
     pub struct Sha512Message {
@@ -224,11 +225,20 @@ mod Sha512Util {
         }
 
         fn rotate(&mut self, prime_k :u64, message_k: &u64) {
-            let T1 = self.H + self.ch_val() + self.sigma_e() + message_k + prime_k;
-            let T2 = self.sigma_a() + self.major_value();
+            let d_clone = self.D.clone();
+            let h_clone = self.H.clone();
+            let ch_val = self.ch_val();
+            let sigma_e = self.sigma_e();
+            let sigma_a = self.sigma_a();
+            let maj_val = self.major_value();
+            let msg_k = message_k.clone();
 
-            self.D += T1;
-            self.H += T1 + T2;
+            let T1 = add_unchecked!(h_clone, ch_val, sigma_e, msg_k, prime_k);
+            let T2 = add_unchecked!(sigma_a, maj_val);
+
+
+            self.D = add_unchecked!(d_clone, T1);
+            self.H = add_unchecked!(h_clone, T1, T2);
         }
 
         pub fn process_block(&mut self, chunk_vec: &Vec<u64>) {
