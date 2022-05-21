@@ -1,9 +1,9 @@
-use hmac_tree::sha512::Sha512Hash;
+use hmac_tree::hmac::Hmac;
 
 
 fn main() {
-    let h = Sha512Hash::from_str("a");
+    let hmac = Hmac::from_str("lll", "sss");
 
-    println!("{}", h.get_hex_digest());
+    println!("{}", hmac.calculate().1)
 
 }
