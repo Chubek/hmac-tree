@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 hmac-tree = { path = "../hmac_tree" }
+hmac-procs = { path = "../hmac_procs" }
 quote = "*"
 paste = "*"
