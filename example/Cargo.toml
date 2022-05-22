@@ -10,3 +10,5 @@ hmac-tree = { path = "../hmac_tree" }
 hmac-procs = { path = "../hmac_procs" }
 quote = "*"
 paste = "*"
+syn = { version = "*", features = ["full"] }
+proc-macro2 = "*"
