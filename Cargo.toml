@@ -2,4 +2,5 @@
 members = [
     "example",
     "hmac_tree",
+    "hmac_procs",
 ]

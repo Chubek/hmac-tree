@@ -1,10 +1,10 @@
 #[allow(non_snake_case)]
-mod Sha512Util {
+mod sha512_util {
     use std::ops::Add;
 
     use crate::constants::SHA512_PRIME;
-    use crate::encoders::{BinaryRep, HexRep};
-    use crate::utils::ChunkUtils::{rotate_right_by_n_bits, shift_right_by_n_bits};
+    use crate::encoders::{binary_rep, hex_rep};
+    use crate::utils::chunk_utils::{rotate_right_by_n_bits, shift_right_by_n_bits};
     use crate::{add_unchecked, add_unchecked_field_swap, scooch};
 
     struct Chunks(Vec<Vec<u64>>);
@@ -33,7 +33,7 @@ mod Sha512Util {
                 for j in (0usize..1024usize).step_by(64) {
                     let val = &concerned_block[(j..j + 64)];
 
-                    let int = BinaryRep::binary_to_int(&val.to_string());
+                    let int = binary_rep::binary_to_int(&val.to_string());
 
                     chunk.push(int);
                 }
@@ -92,7 +92,7 @@ mod Sha512Util {
 
     impl Sha512Message {
         pub fn new(original: Vec<u8>) -> Self {
-            let mut message = BinaryRep::bytes_to_binary(&original);
+            let mut message = binary_rep::bytes_to_binary(&original);
             let original_len = message.len();
 
             message.push_str("1");
@@ -108,7 +108,7 @@ mod Sha512Util {
 
             message.push_str(&"0".repeat(to_be_added - 128));
 
-            let int_to_be_added = BinaryRep::integer_to_binary(original_len, 128);
+            let int_to_be_added = binary_rep::integer_to_binary(original_len, 128);
 
             message.push_str(int_to_be_added.as_str());
 
@@ -242,14 +242,14 @@ mod Sha512Util {
         }
 
         pub fn get_hex_rep(&self) -> String {
-            let A = HexRep::decimal_to_hex(self.A);
-            let B = HexRep::decimal_to_hex(self.B);
-            let C = HexRep::decimal_to_hex(self.C);
-            let D = HexRep::decimal_to_hex(self.D);
-            let E = HexRep::decimal_to_hex(self.E);
-            let F = HexRep::decimal_to_hex(self.F);
-            let G = HexRep::decimal_to_hex(self.G);
-            let H = HexRep::decimal_to_hex(self.H);
+            let A = hex_rep::decimal_to_hex(self.A);
+            let B = hex_rep::decimal_to_hex(self.B);
+            let C = hex_rep::decimal_to_hex(self.C);
+            let D = hex_rep::decimal_to_hex(self.D);
+            let E = hex_rep::decimal_to_hex(self.E);
+            let F = hex_rep::decimal_to_hex(self.F);
+            let G = hex_rep::decimal_to_hex(self.G);
+            let H = hex_rep::decimal_to_hex(self.H);
 
             format!("{}{}{}{}{}{}{}{}", A, B, C, D, E, F, G, H)
         }
@@ -257,7 +257,7 @@ mod Sha512Util {
         pub fn get_byte_rep(&self) -> Vec<u8> {
             let hex_rep = self.get_hex_rep();
 
-            HexRep::decode_hex(hex_rep.as_str())
+            hex_rep::decode_hex(hex_rep.as_str())
         }
 
     }
@@ -266,14 +266,14 @@ mod Sha512Util {
 
 pub struct Sha512Hash {
     data: Vec<u8>,
-    message: Sha512Util::Sha512Message,
-    buffer: Sha512Util::Sha512Buffer,
+    message: sha512_util::Sha512Message,
+    buffer: sha512_util::Sha512Buffer,
 }
 
 impl Sha512Hash {
     pub fn from_bytes(data: Vec<u8>) -> Self {
-        let message = Sha512Util::Sha512Message::new(data.clone());
-        let buffer = Sha512Util::Sha512Buffer::new();
+        let message = sha512_util::Sha512Message::new(data.clone());
+        let buffer = sha512_util::Sha512Buffer::new();
 
         let mut obj = Sha512Hash {data, message, buffer};
 
@@ -295,8 +295,8 @@ impl Sha512Hash {
     pub fn update_from_bytes(&mut self, s: Vec<u8>) {
         self.data.extend(s);
 
-        self.message = Sha512Util::Sha512Message::new(self.data.clone());
-        self.buffer = Sha512Util::Sha512Buffer::new();
+        self.message = sha512_util::Sha512Message::new(self.data.clone());
+        self.buffer = sha512_util::Sha512Buffer::new();
 
         self.calculate();
     }

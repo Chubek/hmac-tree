@@ -1,4 +1,4 @@
-pub mod ChunkUtils {
+pub mod chunk_utils {
     pub fn rotate_right_by_n_bits(b: &u64, n: u64) -> u64 {
         (b >> n) | (b << (64 - n))
     }
@@ -8,7 +8,7 @@ pub mod ChunkUtils {
     }
 }
 
-pub mod MacroRules {
+pub mod macro_rules {
     use paste;
 
     #[macro_export]
@@ -38,7 +38,7 @@ pub mod MacroRules {
               let mut fin = 0u64;
 
               $(
-                  fin = crate::utils::Math::no_overflow_add(fin, $x);
+                  fin = crate::utils::math::no_overflow_add(fin, $x);
               )*
 
               fin
@@ -53,7 +53,7 @@ pub mod MacroRules {
         ($name:ident { $($field:literal),* }, $suff: literal) => {
             $(
                 paste::paste! {
-                    $name.[<$field>] = crate::utils::Math::no_overflow_add($name.[< $field >], $name.[<$field $suff>]);
+                    $name.[<$field>] = crate::utils::math::no_overflow_add($name.[< $field >], $name.[<$field $suff>]);
                 }
             )*
 
@@ -68,7 +68,7 @@ pub mod MacroRules {
 
 }
 
-pub mod Math {
+pub mod math {
     pub fn no_overflow_add(a_in: u64, b_in: u64) -> u64 {
         let (a, b) = (a_in as u128, b_in as u128);
 
