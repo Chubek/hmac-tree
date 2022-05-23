@@ -1,11 +1,11 @@
-use std::borrow::Borrow;
-use std::ops::{Index, IndexMut};
-use std::vec;
 use crate::encoders::hex_rep::decode_hex;
+use crate::encoders::index_parser::IndexType;
 use crate::encoders::serializer::HtreeJsonSerializer;
 use crate::hmac::Hmac;
-use crate::encoders::index_parser::IndexType;
+use std::borrow::Borrow;
+use std::ops::{Index, IndexMut};
 use std::sync::{Arc, Mutex};
+use std::vec;
 
 #[derive(Clone)]
 pub struct HTreeNode {
@@ -15,7 +15,6 @@ pub struct HTreeNode {
     pub digest: Vec<u8>,
     pub data: Vec<u8>,
     pub index: String,
-    
 }
 
 pub enum InsertBranch {
@@ -23,19 +22,51 @@ pub enum InsertBranch {
     Right(Option<Arc<Mutex<HTreeNode>>>),
 }
 
+pub enum RemoveBranch {
+    Left,
+    Right,
+}
+
+pub enum TraverseType {
+    IndOrder,
+    PostOrder,
+    PreOrder,
+}
+
 impl HTreeNode {
     fn new(id: u32, data: Vec<u8>, digest: Vec<u8>, index: String) -> Self {
-        HTreeNode { id, data, digest, left: None, right: None, index }
+        HTreeNode {
+            id,
+            data,
+            digest,
+            left: None,
+            right: None,
+            index,
+        }
     }
 
     fn new_root(data: Vec<u8>, digest: Vec<u8>) -> Self {
-        HTreeNode { id: 0, left: None, right: None, digest, data, index: "ROOT".to_string() }
+        HTreeNode {
+            id: 0,
+            left: None,
+            right: None,
+            digest,
+            data,
+            index: "ROOT".to_string(),
+        }
     }
 
     fn new_empty() -> Self {
-        HTreeNode { id: 0, left: None, right: None, digest: vec![], data: vec![], index: "".to_string() }
+        HTreeNode {
+            id: 0,
+            left: None,
+            right: None,
+            digest: vec![],
+            data: vec![],
+            index: "".to_string(),
+        }
     }
- 
+
     pub fn set_left(&mut self, left: Option<Arc<Mutex<HTreeNode>>>) {
         self.left = left;
     }
@@ -52,8 +83,9 @@ impl HTreeNode {
 
     pub fn validate_str(&self, digest: &str, other_digest: &str) -> bool {
         let hmac_self = Hmac::from_str(
-                String::from_utf8(self.data.clone()).unwrap().as_str(), 
-                digest);
+            String::from_utf8(self.data.clone()).unwrap().as_str(),
+            digest,
+        );
 
         hmac_self.valitate_str(other_digest)
     }
@@ -64,142 +96,134 @@ impl HTreeNode {
         let node = match index_parsed {
             IndexType::Root => Some(Arc::new(Mutex::new(self.clone()))),
             IndexType::Mixed(v) => {
-            let n = {
-                let mut ni = None;
+                let n = {
+                    let mut ni = None;
 
-                for (l, r, g) in v {                   
-                    let nx = match g {
-                        'l' => {
-                            let mut nii = self.clone().left;
-                            let mut i = 0usize;
-                            let mut j = 0usize;
+                    for (l, r, g) in v {
+                        let nx = match g {
+                            'l' => {
+                                let mut nii = self.clone().left;
+                                let mut i = 0usize;
+                                let mut j = 0usize;
 
-                            while let Some(n) = nii {
-                                let n_deref = &*n;
-                                let n_lock = n_deref.lock().unwrap();
+                                while let Some(n) = nii {
+                                    let n_deref = &*n;
+                                    let n_lock = n_deref.lock().unwrap();
 
-                                nii = n_lock.left.to_owned();
-    
-                                i += 1;
-    
-                                if i >= l {
-                                    break;
+                                    nii = n_lock.left.to_owned();
+
+                                    i += 1;
+
+                                    if i >= l {
+                                        break;
+                                    }
                                 }
-                            }
 
-                            while let Some(n) = nii {
-                                let n_deref = &*n;
-                                let n_lock = n_deref.lock().unwrap();
+                                while let Some(n) = nii {
+                                    let n_deref = &*n;
+                                    let n_lock = n_deref.lock().unwrap();
 
-                                nii = n_lock.right.to_owned();
-    
-                                j += 1;
-    
-                                if j >= l {
-                                    break;;
+                                    nii = n_lock.right.to_owned();
+
+                                    j += 1;
+
+                                    if j >= l {
+                                        break;
+                                    }
                                 }
+
+                                nii
                             }
-    
-                            nii                       
-    
-                        },
-                        'r' => {
-                            let mut nii = self.clone().left;
-                            let mut i = 0usize;
-                            let mut j = 0usize;
+                            'r' => {
+                                let mut nii = self.clone().left;
+                                let mut i = 0usize;
+                                let mut j = 0usize;
 
-                            while let Some(n) = nii {
-                                let n_deref = &*n;
-                                let n_lock = n_deref.lock().unwrap();
+                                while let Some(n) = nii {
+                                    let n_deref = &*n;
+                                    let n_lock = n_deref.lock().unwrap();
 
-                                nii = n_lock.right.to_owned();
-    
-                                i += 1;
-    
-                                if i >= l {
-                                    break;
+                                    nii = n_lock.right.to_owned();
+
+                                    i += 1;
+
+                                    if i >= l {
+                                        break;
+                                    }
                                 }
-                            }
 
-                            while let Some(n) = nii {
-                                let n_deref = &*n;
-                                let n_lock = n_deref.lock().unwrap();
-                               
-                                nii = n_lock.left.to_owned();
-    
-                                j += 1;
-    
-                                if j >= l {
-                                    break;;
+                                while let Some(n) = nii {
+                                    let n_deref = &*n;
+                                    let n_lock = n_deref.lock().unwrap();
+
+                                    nii = n_lock.left.to_owned();
+
+                                    j += 1;
+
+                                    if j >= l {
+                                        break;
+                                    }
                                 }
-                            }
-    
-                            nii                       
-    
-                        },
-                        _ => panic!("Wrong index"),
-                    };  
 
-                    ni = nx;
+                                nii
+                            }
+                            _ => panic!("Wrong index"),
+                        };
+
+                        ni = nx;
+                    }
+
+                    ni
                 };
-                
-                ni
-            };
-                n                
-            },
-            IndexType::OnlyLeft(v) => {   
+                n
+            }
+            IndexType::OnlyLeft(v) => {
                 let mut nii = self.clone().left;
 
-                
-                for l in v {   
-  
-                    let mut i = 0usize;    
-                        
+                for l in v {
+                    let mut i = 0usize;
+
                     while let Some(n) = nii {
                         let n_deref = &*n;
                         let n_lock = n_deref.lock().unwrap();
 
                         nii = n_lock.left.to_owned();
-        
+
                         i += 1;
-        
+
                         if i >= l {
                             break;
                         }
                     }
-                }  
-                                          
+                }
+
                 nii
-            },
-            IndexType::OnlyRight(v) => {   
+            }
+            IndexType::OnlyRight(v) => {
                 let mut nii = self.clone().left;
 
-                
-                for l in v {   
-  
-                    let mut i = 0usize;    
-                        
+                for l in v {
+                    let mut i = 0usize;
+
                     while let Some(n) = nii {
                         let n_deref = &*n;
                         let n_lock = n_deref.lock().unwrap();
 
                         nii = n_lock.right.to_owned();
-        
+
                         i += 1;
-        
+
                         if i >= l {
                             break;
                         }
                     }
-                }  
-                                          
+                }
+
                 nii
-            },
+            }
         };
 
-
         node
-
     }
 
     pub fn insert(&self, path: String, item: InsertBranch) {
@@ -213,19 +237,35 @@ impl HTreeNode {
                 match item {
                     InsertBranch::Left(i) => {
                         n_mut_lock.left = i;
-                    },
+                    }
                     InsertBranch::Right(i) => {
                         n_mut_lock.right = i;
-                    },
+                    }
                 }
-            },
+            }
             None => (),
         }
-
-       
     }
 
-    pub fn get_in_order_recurse(node: Option<Arc<Mutex<HTreeNode>>>, v: &mut Vec<Arc<Mutex<HTreeNode>>>) {
+    pub fn remove(&self, path: String, item: RemoveBranch) {
+        match item {
+            RemoveBranch::Left => {
+                let item = InsertBranch::Left(None);
+
+                self.insert(path, item);
+            }
+            RemoveBranch::Right => {
+                let item = InsertBranch::Right(None);
+
+                self.insert(path, item);
+            }
+        }
+    }
+
+    pub fn get_in_order_recurse(
+        node: Option<Arc<Mutex<HTreeNode>>>,
+        v: &mut Vec<Arc<Mutex<HTreeNode>>>,
+    ) {
         match node {
             Some(n) => {
                 let n_deref = &*n;
@@ -239,12 +279,15 @@ impl HTreeNode {
                 v.push(n.clone());
 
                 Self::get_in_order_recurse(n_right, v);
-            }, 
+            }
             None => (),
         }
     }
 
-    pub fn get_pre_order_recurse(node: Option<Arc<Mutex<HTreeNode>>>, v: &mut Vec<Arc<Mutex<HTreeNode>>>) {
+    pub fn get_pre_order_recurse(
+        node: Option<Arc<Mutex<HTreeNode>>>,
+        v: &mut Vec<Arc<Mutex<HTreeNode>>>,
+    ) {
         match node {
             Some(n) => {
                 let n_deref = &*n;
@@ -258,12 +301,15 @@ impl HTreeNode {
                 Self::get_in_order_recurse(n_left, v);
 
                 Self::get_in_order_recurse(n_right, v);
-            }, 
+            }
             None => (),
         }
     }
 
-    pub fn get_post_order_recurse(node: Option<Arc<Mutex<HTreeNode>>>, v: &mut Vec<Arc<Mutex<HTreeNode>>>) {
+    pub fn get_post_order_recurse(
+        node: Option<Arc<Mutex<HTreeNode>>>,
+        v: &mut Vec<Arc<Mutex<HTreeNode>>>,
+    ) {
         match node {
             Some(n) => {
                 let n_deref = &*n;
@@ -277,16 +323,25 @@ impl HTreeNode {
                 Self::get_in_order_recurse(n_right, v);
 
                 v.push(n.clone());
-
-            }, 
+            }
             None => (),
         }
     }
 
-    
+    pub fn traverse(&self, ty: TraverseType) -> Vec<Arc<Mutex<HTreeNode>>> {
+        let mut v: Vec<Arc<Mutex<HTreeNode>>> = Vec::new();
 
+        let node = Some(Arc::new(Mutex::new(self.to_owned())));
+
+        match ty {
+            TraverseType::IndOrder => Self::get_in_order_recurse(node, &mut v),
+            TraverseType::PostOrder => Self::get_post_order_recurse(node, &mut v),
+            TraverseType::PreOrder => Self::get_pre_order_recurse(node, &mut v),
+        }
+
+        v
+    }
 }
-
 
 pub struct Htree<T: HtreeJsonSerializer + Clone> {
     data_containers: Vec<T>,
@@ -295,47 +350,30 @@ pub struct Htree<T: HtreeJsonSerializer + Clone> {
 
 impl<T: HtreeJsonSerializer + Clone> Htree<T> {
     fn new(data: Vec<T>, key: &str) {
-
         let key_bytes = key.as_bytes().to_vec();
 
-        let mut root = Self::make_node(
-            data.get(0).unwrap(),
-            0, 
-            key_bytes.clone());
-
+        let mut root = Self::make_node(data.get(0).unwrap(), 0, key_bytes.clone());
 
         data[1..]
-                    .to_vec()
-                    .iter()
-                    .step_by(2)
-                    .enumerate()
-                    .map(|(i, x)| {
-                        let left = Some(Self::make_node(
-                            x, 
-                            i as u32, 
-                            key_bytes.clone()));
-                        
-                        let right = match data.get(i + 1) {
-                            Some(t) => {
-                                Some(Self::make_node(t, 
-                                    i as u32, key_bytes.clone()))
-                            },
+            .to_vec()
+            .iter()
+            .step_by(2)
+            .enumerate()
+            .map(|(i, x)| {
+                let left = Some(Self::make_node(x, i as u32, key_bytes.clone()));
 
-                            None => None,
-                        };
+                let right = match data.get(i + 1) {
+                    Some(t) => Some(Self::make_node(t, i as u32, key_bytes.clone())),
 
-                        
-
-
-                    });
-
+                    None => None,
+                };
+            });
     }
 
     fn make_node(t: &T, id: u32, key: Vec<u8>) -> Arc<Mutex<HTreeNode>> {
         let data = t.ser_into_json();
         let hmac = Hmac::from_bytes(data.clone(), key);
         let digest = hmac.calculate().0;
-
 
         Arc::new(Mutex::new(HTreeNode::new_empty()))
     }

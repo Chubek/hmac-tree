@@ -19,7 +19,6 @@ impl Hmac {
         Hmac { key: key_mut, data }
     }
 
-
     pub fn from_str(data: &str, key: &str) -> Self {
         if key.len() > 128 {
             panic!("Key length must be less than 128")
@@ -29,13 +28,14 @@ impl Hmac {
 
         Self::pad_key(&mut key_mut);
 
-        Hmac { data: data.as_bytes().to_vec(), key: key_mut }
+        Hmac {
+            data: data.as_bytes().to_vec(),
+            key: key_mut,
+        }
     }
-
 
     fn pad_key(key: &mut Vec<u8>) {
         key.extend(repeat(0x00).take(128 - key.len()).collect::<Vec<u8>>());
-
     }
 
     fn xor(&self, pad: Vec<u8>) -> Vec<u8> {
@@ -64,9 +64,8 @@ impl Hmac {
         h_outer.update_from_bytes(h_inner.get_digest());
 
         (h_outer.get_digest(), h_outer.get_hex_digest())
-        
     }
-     
+
     pub fn valitate_bytes(&self, other_digest: Vec<u8>) -> bool {
         let own_digest = self.calculate().0;
 

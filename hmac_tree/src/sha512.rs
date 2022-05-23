@@ -27,7 +27,7 @@ mod sha512_util {
                 let slice_ind_end = slice_ind_beg + 1024;
 
                 let concerned_block = &init_val[(slice_ind_beg..slice_ind_end)];
-                
+
                 slice_ind_beg = slice_ind_end;
 
                 for j in (0usize..1024usize).step_by(64) {
@@ -37,7 +37,6 @@ mod sha512_util {
 
                     chunk.push(int);
                 }
-                
 
                 for m in 16..80 {
                     pad_with_words(&mut chunk, m);
@@ -176,7 +175,6 @@ mod sha512_util {
             }
         }
 
-
         fn major_value(&self) -> u64 {
             (self.A & self.B) ^ (self.B & self.C) ^ (self.C & self.A)
         }
@@ -205,7 +203,7 @@ mod sha512_util {
             res_a
         }
 
-        fn rotate(&mut self, prime_k :u64, message_k: &u64) {
+        fn rotate(&mut self, prime_k: u64, message_k: &u64) {
             let d_clone = self.D.clone();
             let h_clone = self.H.clone();
 
@@ -228,8 +226,6 @@ mod sha512_util {
                     scooch!(self, H, A, B, C, D, E, F, G);
                 }
 
-
-
                 let message_k = chunk_vec[i];
                 let prime_k = SHA512_PRIME[i];
 
@@ -237,7 +233,7 @@ mod sha512_util {
             }
 
             scooch!(self, H, A, B, C, D, E, F, G);
-            
+
             add_unchecked_field_swap!(self {"A", "B", "C", "D", "E", "F", "G", "H"}, "Prev");
         }
 
@@ -259,10 +255,8 @@ mod sha512_util {
 
             hex_rep::decode_hex(hex_rep.as_str())
         }
-
     }
 }
-
 
 pub struct Sha512Hash {
     data: Vec<u8>,
@@ -275,7 +269,11 @@ impl Sha512Hash {
         let message = sha512_util::Sha512Message::new(data.clone());
         let buffer = sha512_util::Sha512Buffer::new();
 
-        let mut obj = Sha512Hash {data, message, buffer};
+        let mut obj = Sha512Hash {
+            data,
+            message,
+            buffer,
+        };
 
         obj.calculate();
 

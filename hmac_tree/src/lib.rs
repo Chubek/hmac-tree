@@ -1,17 +1,16 @@
 #![allow(unused)]
 
 #[macro_use]
-extern  crate lazy_static;
+extern crate lazy_static;
 
 extern crate proc_macro;
 
-pub mod sha512;
-pub mod encoders;
-mod utils;
-pub mod hmac;
 mod constants;
+pub mod encoders;
+pub mod hmac;
 pub mod htree;
-
+pub mod sha512;
+mod utils;
 
 #[cfg(test)]
 mod tests {

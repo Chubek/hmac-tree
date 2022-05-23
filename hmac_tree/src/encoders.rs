@@ -3,20 +3,20 @@ pub mod binary_rep {
 
     pub fn bytes_to_binary(v: &Vec<u8>) -> String {
         let mut res = v
-                        .iter()
-                        .map(|c| format!("{:08b}", c))
-                        .collect::<Vec<String>>()
-                        .join("");
+            .iter()
+            .map(|c| format!("{:08b}", c))
+            .collect::<Vec<String>>()
+            .join("");
 
         res
     }
 
     pub fn binary_to_int(s: &String) -> u64 {
         let int = {
-                match u64::from_str_radix(s, 2) {
-                    Ok(i) => i,
-                    Err(e) => panic!("{:?}", e),
-                }
+            match u64::from_str_radix(s, 2) {
+                Ok(i) => i,
+                Err(e) => panic!("{:?}", e),
+            }
         };
 
         int
@@ -29,9 +29,8 @@ pub mod binary_rep {
             32 => format!("{:032b}", int),
             64 => format!("{:064b}", int),
             128 => format!("{:0128b}", int),
-            _ => format!("{:b}", int)
+            _ => format!("{:b}", int),
         }
-
     }
 }
 
@@ -49,16 +48,14 @@ pub mod hex_rep {
 
     pub fn encode_hex(v: Vec<u8>) -> String {
         let ret = v
-                .iter()
-                .map(|x| format!("{:02x}", x))
-                .collect::<Vec<String>>()
-                .join("");
+            .iter()
+            .map(|x| format!("{:02x}", x))
+            .collect::<Vec<String>>()
+            .join("");
 
         ret
     }
-
 }
-
 
 pub mod serializer {
     pub trait HtreeJsonSerializer {
@@ -76,7 +73,6 @@ pub mod serializer {
     }
 }
 
-
 pub mod index_parser {
     use std::borrow::{Borrow, BorrowMut};
 
@@ -89,41 +85,50 @@ pub mod index_parser {
 
     impl From<String> for IndexType {
         fn from(index: String) -> Self {
-            let index_no_ws = index
-                    .to_lowercase()
-                    .replace(" ", "");
+            let index_no_ws = index.to_lowercase().replace(" ", "");
 
             let index_no_root = index_no_ws.replace("root", "");
 
             let index_split = index_no_root.split("->");
-    
 
             let ret = if index_no_ws.trim() == "root" {
                 IndexType::Root
             } else if !index.to_lowercase().contains("l") {
-                let ret = index_split.map(|x| {
-                    let uo = x.split("r").map(|xi| {
-                        let u = usize::from_str_radix(xi, 10).unwrap();
+                let ret = index_split
+                    .map(|x| {
+                        let uo = x
+                            .split("r")
+                            .map(|xi| {
+                                let u = usize::from_str_radix(xi, 10).unwrap();
 
-                        u
-                    }).next().unwrap();
+                                u
+                            })
+                            .next()
+                            .unwrap();
 
-                    uo
-                }).collect::<Vec<usize>>();
+                        uo
+                    })
+                    .collect::<Vec<usize>>();
 
-                IndexType::OnlyRight(ret)            
+                IndexType::OnlyRight(ret)
             } else if !index.to_lowercase().contains("r") {
-                let ret = index_split.map(|x| {
-                    let uo = x.split("l").map(|xi| {
-                        let u = usize::from_str_radix(xi, 10).unwrap();
+                let ret = index_split
+                    .map(|x| {
+                        let uo = x
+                            .split("l")
+                            .map(|xi| {
+                                let u = usize::from_str_radix(xi, 10).unwrap();
 
-                        u
-                    }).next().unwrap();
+                                u
+                            })
+                            .next()
+                            .unwrap();
 
-                    uo
-                }).collect::<Vec<usize>>();
+                        uo
+                    })
+                    .collect::<Vec<usize>>();
 
-                IndexType::OnlyLeft(ret) 
+                IndexType::OnlyLeft(ret)
             } else {
                 let mut ret: Vec<(usize, usize, char)> = vec![];
 
@@ -137,7 +142,7 @@ pub mod index_parser {
                     let mut gotten = false;
                     let mut first_gotten = 'n';
 
-                    for c in chars {    
+                    for c in chars {
                         if c.is_numeric() {
                             ph = format!("{ph}{c}");
                         } else {
@@ -152,7 +157,7 @@ pub mod index_parser {
                                     }
 
                                     gotten = true;
-                                },
+                                }
                                 'r' => {
                                     last_r = i32::from_str_radix(&ph, 10).unwrap();
 
@@ -163,7 +168,7 @@ pub mod index_parser {
                                     }
 
                                     gotten = true;
-                                },
+                                }
                                 _ => panic!("Wrong index"),
                             }
                         }
@@ -177,13 +182,12 @@ pub mod index_parser {
                             (last_l, last_r, gotten, first_gotten) = (-1, -1, false, 'm');
                         }
                     }
-
                 });
-                
-                IndexType::Mixed(ret) 
+
+                IndexType::Mixed(ret)
             };
 
             ret
-        }   
+        }
     }
 }
